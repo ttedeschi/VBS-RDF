@@ -885,6 +885,7 @@ float GetEventSFFake(float lepton_SFFake, float tau_SFFake, int lepton_LnTRegion
     else if (lepton_LnTRegion==0 && tau_LnTRegion==0) return 0.;
 }
 
+
 /*
 RVec<int> SelectVBSQGenJet(rvec_i GenPart_pdgId, rvec_i GenPart_genPartIdxMother, rvec_f GenPart_pt, rvec_f GenPart_eta, rvec_i GenJet_partonFlavour, rvec_f GenJet_pt, rvec_f GenJet_eta){
 
@@ -2458,7 +2459,17 @@ RVec<float> PSWeight_variations(rvec_f PSWeight){
     
     return result;
 }
-    
+
+float input_min[] = {100.28593999999999653028, 165.25651999999999475222, 30.00037199999999870670, 30.00000599999999906231, 0.00000000000000000000, 18.15067900000000022942, 0.27449592999999999909, 3.00000000000000000000, -1.70036019999999998831, 0.00008993041400000000, -3.14158369999999997901, 0.00091377785000000002, 0.87548829999999999707, 0.00000000000000000000, 0.08643542999999999366, 0.36279296999999999240, -2.00000000000000000000, 0.00092983246000000002, 15.49264299999999927593, 0.19364806000000001074, -1.00000000000000000000, 127.83593999999999368811, 30.00007400000000146179, -9.45703100000000063119, 0.08710099000000000313, 30.00000000000000000000, 0.27510827999999998283, 0.20742350000000001065}; 
+float input_max[] = {9199.20299999999951978680, 9837.16200000000026193447, 2622.35669999999981882866, 1320.96579999999994470272, 6.00000000000000000000, 2994.18530000000009749783, 2786.51980000000003201421, 83.00000000000000000000, 1.90496120000000002115, 2416.57250000000021827873, 3.14158630000000016480, 392.68085000000002082743, 1.00000000000000000000, 0.99966717000000004933, 1878.42049999999994724931, 0.99951170000000000293, 30.82330500000000128580, 0.99951170000000000293, 2527.22800000000006548362, 2387.76899999999977808329, 0.99951170000000000293, 9579.11800000000039290171, 2473.33149999999977808329, 9.59863299999999952661, 2179.95949999999993451638, 1641.57960000000002764864, 1279.73929999999995743565, 1509.54549999999994724931}; 
+float output_min = 0.000000; 
+float output_max = 1.000000; 
+
+float sc(float input, int c){
+      float ret = (input - input_min[c]) / (input_max[c] - input_min[c]) * (output_max - output_min) + output_min;
+      return ret;
+}
+
 /*
 R__LOAD_LIBRARY(/usr/local/lib/libtensorflow.so)
 #include "cppflow/ops.h"
@@ -2517,5 +2528,24 @@ RVec<size_t> SelectVBSJets_tagger_mjj_absdeltaetajj_DNN(rvec_f pt, rvec_f eta, r
     return idx;
 }
 */
+
+float get_ptrel(float jet_pt, float jet_eta, float jet_phi, float jet_mass, float lepton_pt, float lepton_eta, float lepton_phi, float lepton_mass){
+    //ROOT::Math::PtEtaPhiMVector jet_p4(jet_pt, jet_eta, jet_phi, jet_mass);
+    //ROOT::Math::PtEtaPhiMVector lepton_p4(lepton_pt, lepton_eta, lepton_phi, lepton_mass);
+    TLorentzVector jet_p4;
+    TLorentzVector lepton_p4;
+    jet_p4.SetPtEtaPhiM(jet_pt, jet_eta, jet_phi, jet_mass);
+    lepton_p4.SetPtEtaPhiM(lepton_pt, lepton_eta, lepton_phi, lepton_mass);
+    auto lepjet_tv = (jet_p4+lepton_p4).Vect();
+    auto lep_tv = lepton_p4.Vect();
+    float ptrel = (lepjet_tv.Cross(lep_tv)).Mag()/(lepjet_tv.Mag());
+    //float ptrel = lepjet_tv.mag2();
+    return ptrel;
+}
+
+float Get_isolation(rvec_f Electron_jetRelIso, rvec_i Electron_idx, rvec_f Muon_pfRelIso04_all, rvec_i Muon_idx, int GoodLeptonFamily){
+    if(GoodLeptonFamily == 0) return Electron_jetRelIso[Electron_idx[0]];
+    else return Muon_pfRelIso04_all[Muon_idx[0]];
+}
 
 #endif
